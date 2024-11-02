@@ -1,0 +1,115 @@
+---
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:1.41.1
+    runtime: nvidia
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/Santiago}
+      - VERSION=docker
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/media_center/data/plex:/config
+      - ~/media_center/content/complete/tvseries:/tv
+      - ~/media_center/content/complete/movies:/movies
+      # - ~/media_center/downloads:/anime
+    restart: unless-stopped
+
+  transmission:
+    image: lscr.io/linuxserver/transmission:4.0.6
+    container_name: transmission
+    networks:
+      - internal
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/Santiago}
+      - USER=${TRANSMISSION_USER:-admin}
+      - PASS=${TRANSMISSION_PASS:-admin}
+    volumes:
+      - ~/media_center/data/transmission:/config
+      - ~/media_center/downloads:/downloads
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:4.0.10
+    container_name: sonarr
+    networks:
+      - internal
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/Santiago}
+      - USER=${SONARR_USER:-admin}
+      - PASS=${SONARR_PASS:-admin}
+    volumes:
+      - ~/media_center/data/sonarr:/config
+      - ~/media_center/downloads/complete/tvseries:/downloads/complete/tvseries
+      - ~/media_center/content/complete/tvseries:/tv
+
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:5.15.0-nightly
+    container_name: radarr
+    networks:
+      - internal
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/Santiago}
+    volumes:
+      - ~/media_center/data/radarr:/config
+      - ~/media_center/downloads/complete/movies:/downloads/complete/movies
+      - ~/media_center/content/complete/movies:/movies
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:0.22.862
+    container_name: jackett
+    networks:
+      - internal
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/Santiago}
+      - AUTO_UPDATE=true
+        #- RUN_OPTS= #optional
+    volumes:
+      - ~/media_center/data/jackett/data:/config
+      - ~/media_center/data/jackett/blackhole:/downloads
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+
+  flaresolverr:
+    # DockerHub mirror flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr:v3.3.21
+    container_name: flaresolverr
+    networks:
+      - internal
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TIMEZONE:-America/Santiago}
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+  host:
+    name: host
+    external: true
+  
